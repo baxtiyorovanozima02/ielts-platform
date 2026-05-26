@@ -160,3 +160,5 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': False,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
