@@ -1,4 +1,6 @@
 from django.db import models
+from django.conf import settings
+
 
 class Section(models.Model):
     SECTION_CHOICES = [
@@ -48,3 +50,15 @@ class Answer(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class UserTestResult(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='results')
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='results')
+    essay_text = models.TextField()
+    ai_feedback = models.TextField(blank=True)
+    band_score = models.FloatField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.test.title}"
