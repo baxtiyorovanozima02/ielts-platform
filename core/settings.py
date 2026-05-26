@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'djoser',
 
     'apps.users',
+    'apps.tests',
 ]
 
 MIDDLEWARE = [
