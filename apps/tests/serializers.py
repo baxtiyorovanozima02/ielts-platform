@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Section, Test, Question, Answer
+from .models import Section, Test, Question, Answer, UserTestResult
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,3 +24,10 @@ class SectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Section
         fields = ('id', 'name', 'description')
+
+
+class UserTestResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserTestResult
+        fields = ('id', 'test', 'essay_text', 'ai_feedback', 'band_score', 'created_at')
+        read_only_fields = ('ai_feedback', 'band_score', 'created_at')
