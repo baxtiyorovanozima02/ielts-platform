@@ -1,16 +1,13 @@
-from rest_framework import generics, permissions
-from .models import Section, Test, Question
-from .serializers import SectionSerializer, TestSerializer, QuestionSerializer
-from google import genai
-from google.genai import types
+import requests
 from django.conf import settings
-from rest_framework import status
+from rest_framework import status, generics, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Test, UserTestResult
+from .models import Section, Test, Question, UserTestResult
+from .serializers import SectionSerializer, TestSerializer, QuestionSerializer
 
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
 
 class SectionListView(generics.ListAPIView):
     queryset = Section.objects.all()
@@ -69,11 +66,20 @@ class WritingEvaluationView(APIView):
         Feedback: ...
         """
 
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "openrouter/auto",
+                "messages": [{"role": "user", "content": prompt}]
+            }
         )
-        ai_feedback = response.text
+        response_data = response.json()
+        print(response_data)
+        ai_feedback = response_data['choices'][0]['message']['content']
 
         band_line = ai_feedback.split('\n')[0]
         try:
