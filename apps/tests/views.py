@@ -1,7 +1,8 @@
 from rest_framework import generics, permissions
 from .models import Section, Test, Question
 from .serializers import SectionSerializer, TestSerializer, QuestionSerializer
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from django.conf import settings
 from rest_framework import status
 from rest_framework.views import APIView
@@ -9,8 +10,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Test, UserTestResult
 
-genai.configure(api_key=settings.GEMINI_API_KEY)
-
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
 class SectionListView(generics.ListAPIView):
     queryset = Section.objects.all()
@@ -69,8 +69,10 @@ class WritingEvaluationView(APIView):
         Feedback: ...
         """
 
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=prompt
+        )
         ai_feedback = response.text
 
         band_line = ai_feedback.split('\n')[0]
