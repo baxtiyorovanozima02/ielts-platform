@@ -74,3 +74,31 @@ class SpeakingResult(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Speaking - {self.test.title}"
+
+
+class UserProgress(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='progress')
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='progress')
+    average_band_score = models.FloatField(default=0.0)
+    total_tests_taken = models.IntegerField(default=0)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'section')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.section.name} - {self.average_band_score}"
+
+
+class DailyPlan(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='daily_plans')
+    date = models.DateField(auto_now_add=True)
+    plan_text = models.TextField()
+    ai_generated = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'date')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date}"
