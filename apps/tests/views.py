@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Section, Test, Question, UserTestResult,SpeakingResult
-from .serializers import SectionSerializer, TestSerializer, QuestionSerializer,SpeakingResultSerializer
+from .serializers import SectionSerializer, TestSerializer, QuestionSerializer,SpeakingResultSerializer,UserTestResultSerializer
 
 
 
@@ -174,3 +174,23 @@ class SpeakingEvaluationView(APIView):
             'band_score': result.band_score,
             'ai_feedback': result.ai_feedback,
         }, status=status.HTTP_201_CREATED)
+
+
+class WritingResultListView(generics.ListAPIView):
+    serializer_class = UserTestResultSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return UserTestResult.objects.filter(
+            user=self.request.user
+        ).select_related('test').order_by('-created_at')
+
+
+class SpeakingResultListView(generics.ListAPIView):
+    serializer_class = SpeakingResultSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return SpeakingResult.objects.filter(
+            user=self.request.user
+        ).select_related('test').order_by('-created_at')
