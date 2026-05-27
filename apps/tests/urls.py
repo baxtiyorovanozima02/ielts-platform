@@ -4,7 +4,8 @@ from .views import (
     TestListView,
     TestDetailView,
     QuestionListView,
-    WritingEvaluationView
+    WritingEvaluationView,
+    SpeakingEvaluationView
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path('tests/<int:pk>/', TestDetailView.as_view(), name='test-detail'),
     path('tests/<int:test_id>/questions/', QuestionListView.as_view(), name='question-list'),
     path('tests/<int:test_id>/evaluate/', WritingEvaluationView.as_view(), name='writing-evaluate'),
+    path('tests/<int:test_id>/speaking/', SpeakingEvaluationView.as_view(), name='speaking-evaluate'),
 ]
