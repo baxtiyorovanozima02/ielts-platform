@@ -162,3 +162,6 @@ SIMPLE_JWT = {
 }
 
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
