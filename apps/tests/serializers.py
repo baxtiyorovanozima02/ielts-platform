@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Section, Test, Question, Answer, UserTestResult
+from .models import Section, Test, Question, Answer, UserTestResult,SpeakingResult
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,3 +31,10 @@ class UserTestResultSerializer(serializers.ModelSerializer):
         model = UserTestResult
         fields = ('id', 'test', 'essay_text', 'ai_feedback', 'band_score', 'created_at')
         read_only_fields = ('ai_feedback', 'band_score', 'created_at')
+
+
+class SpeakingResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SpeakingResult
+        fields = ('id', 'test', 'audio_file', 'transcript', 'ai_feedback', 'band_score', 'created_at')
+        read_only_fields = ('transcript', 'ai_feedback', 'band_score', 'created_at')
