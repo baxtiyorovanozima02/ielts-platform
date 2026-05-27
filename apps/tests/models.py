@@ -1,6 +1,5 @@
-from django.db import models
 from django.conf import settings
-
+from django.db import models
 
 class Section(models.Model):
     SECTION_CHOICES = [
@@ -62,3 +61,16 @@ class UserTestResult(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.test.title}"
+
+
+class SpeakingResult(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='speaking_results')
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='speaking_results')
+    audio_file = models.FileField(upload_to='speaking_audio/', null=True, blank=True)
+    transcript = models.TextField(blank=True)
+    ai_feedback = models.TextField(blank=True)
+    band_score = models.FloatField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - Speaking - {self.test.title}"
