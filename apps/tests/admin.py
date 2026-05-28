@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Section, Test, Question, Answer, UserTestResult, SpeakingResult
+from .models import Section, Test, Question, Answer, UserTestResult, SpeakingResult, UserProgress, DailyPlan
 
 @admin.register(Section)
 class SectionAdmin(admin.ModelAdmin):
@@ -27,3 +27,11 @@ class UserTestResultAdmin(admin.ModelAdmin):
 @admin.register(SpeakingResult)
 class SpeakingResultAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'test', 'band_score', 'created_at')
+
+@admin.register(UserProgress)
+class UserProgressAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'section', 'average_band_score', 'total_tests_taken', 'last_updated')
+
+@admin.register(DailyPlan)
+class DailyPlanAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'date', 'ai_generated', 'created_at')
