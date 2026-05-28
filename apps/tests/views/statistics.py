@@ -3,10 +3,15 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Avg, Count
 from ..models import UserTestResult, SpeakingResult, Section
-
+from drf_yasg.utils import swagger_auto_schema
 
 class BandScoreHistoryView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Band score tarixi",
+        operation_description="Foydalanuvchining barcha Writing va Speaking natijalar tarixini qaytaradi."
+    )
 
     def get(self, request):
         writing_results = UserTestResult.objects.filter(
@@ -27,6 +32,11 @@ class BandScoreHistoryView(APIView):
 
 class OverallProgressView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Umumiy progress",
+        operation_description="Foydalanuvchining Writing va Speaking bo'yicha o'rtacha ball va umumiy testlar sonini qaytaradi."
+    )
 
     def get(self, request):
         writing_stats = UserTestResult.objects.filter(
@@ -59,6 +69,11 @@ class OverallProgressView(APIView):
 
 class WeakAreasView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Zaif tomonlar",
+        operation_description="Foydalanuvchining 6.0 dan past bo'lgan bo'limlari — zaif tomonlarini qaytaradi."
+    )
 
     def get(self, request):
         writing_avg = UserTestResult.objects.filter(
