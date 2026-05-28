@@ -2,3 +2,4 @@ from .section import SectionListView, TestListView, TestDetailView, QuestionList
 from .writing import WritingEvaluationView, WritingResultListView
 from .speaking import SpeakingEvaluationView, SpeakingResultListView
 from .progress import UserProgressView, DailyPlanView
+from .statistics import BandScoreHistoryView, OverallProgressView, WeakAreasView

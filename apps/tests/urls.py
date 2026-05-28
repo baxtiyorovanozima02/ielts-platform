@@ -10,6 +10,9 @@ from .views import (
     SpeakingResultListView,
     UserProgressView,
     DailyPlanView,
+    BandScoreHistoryView,
+    OverallProgressView,
+    WeakAreasView,
 )
 
 urlpatterns = [
@@ -23,4 +26,7 @@ urlpatterns = [
     path('results/speaking/', SpeakingResultListView.as_view(), name='speaking-results'),
     path('progress/', UserProgressView.as_view(), name='user-progress'),
     path('daily-plan/', DailyPlanView.as_view(), name='daily-plan'),
+    path('statistics/history/', BandScoreHistoryView.as_view(), name='band-score-history'),
+    path('statistics/overall/', OverallProgressView.as_view(), name='overall-progress'),
+    path('statistics/weak-areas/', WeakAreasView.as_view(), name='weak-areas'),
 ]
