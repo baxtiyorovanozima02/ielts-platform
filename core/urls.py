@@ -43,6 +43,7 @@ urlpatterns = [
     path('api/v1/tests/', include('apps.tests.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
+    path('api/v1/vocabulary/', include('apps.vocabulary.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
