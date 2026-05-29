@@ -6,11 +6,16 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from ..models import UserProgress, DailyPlan
 from ..serializers.progress import UserProgressSerializer, DailyPlanSerializer
-
+from drf_yasg.utils import swagger_auto_schema
 
 class UserProgressView(generics.ListAPIView):
     serializer_class = UserProgressSerializer
     permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(operation_summary="Foydalanuvchi progressi")
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
     def get_queryset(self):
         return UserProgress.objects.filter(
@@ -20,6 +25,9 @@ class UserProgressView(generics.ListAPIView):
 
 class DailyPlanView(APIView):
     permission_classes = [IsAuthenticated]
+
+
+    @swagger_auto_schema(operation_summary="Kunlik o'quv reja")
 
     def get(self, request):
         from datetime import date

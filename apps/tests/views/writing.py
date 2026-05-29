@@ -5,10 +5,25 @@ from rest_framework.permissions import IsAuthenticated
 from ..models import Test, UserTestResult
 from ..serializers.writing import UserTestResultSerializer
 from ..tasks import evaluate_writing_task
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 class WritingEvaluationView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Writing baholash",
+        operation_description="Foydalanuvchi esse yozadi, AI orqali baholanadi va natija saqlanadi.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['essay_text'],
+            properties={
+                'essay_text': openapi.Schema(type=openapi.TYPE_STRING, description='Esse matni'),
+            }
+        )
+    )
+
 
     def post(self, request, test_id):
         essay_text = request.data.get('essay_text')
@@ -37,6 +52,12 @@ class WritingEvaluationView(APIView):
 class WritingResultListView(generics.ListAPIView):
     serializer_class = UserTestResultSerializer
     permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Writing natijalari",
+        operation_description="Foydalanuvchining barcha Writing natijalarini qaytaradi."
+    )
+
 
     def get_queryset(self):
         return UserTestResult.objects.filter(

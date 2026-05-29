@@ -5,10 +5,22 @@ from rest_framework.permissions import IsAuthenticated
 from ..models import Test, SpeakingResult
 from ..serializers.speaking import SpeakingResultSerializer
 from ..tasks import evaluate_speaking_task
-
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 class SpeakingEvaluationView(APIView):
     permission_classes = [IsAuthenticated]
+
+
+    @swagger_auto_schema(
+        operation_summary="Speaking baholash",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'transcript': openapi.Schema(type=openapi.TYPE_STRING),
+            }
+        )
+    )
 
     def post(self, request, test_id):
         transcript = request.data.get('transcript')
@@ -46,6 +58,11 @@ class SpeakingEvaluationView(APIView):
 class SpeakingResultListView(generics.ListAPIView):
     serializer_class = SpeakingResultSerializer
     permission_classes = [IsAuthenticated]
+
+
+    @swagger_auto_schema(operation_summary="Speaking natijalari")
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
         return SpeakingResult.objects.filter(
