@@ -92,13 +92,11 @@ class Payment(models.Model):
         self.note = admin_note
         self.save()
 
-        # Eski obunani o'chirish
         Subscription.objects.filter(
             user=self.user,
             is_active=True
         ).update(is_active=False, status='cancelled')
 
-        # Yangi obuna yaratish
         expires_at = timezone.now() + timedelta(days=self.plan.duration_days)
         subscription = Subscription.objects.create(
             user=self.user,
@@ -108,7 +106,6 @@ class Payment(models.Model):
             is_active=True
         )
 
-        # Foydalanuvchini premium qilish
         self.user.is_premium = True
         self.user.save()
 
