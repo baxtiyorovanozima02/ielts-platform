@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.tests',
     'apps.vocabulary',
+    'apps.billing',
 ]
 
 MIDDLEWARE = [
