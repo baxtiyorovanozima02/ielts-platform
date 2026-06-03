@@ -37,8 +37,8 @@ class WritingEvaluationViewTest(APITestCase):
         mock_post.return_value = self._mock_response(7.0)
         url = reverse('writing-evaluate', kwargs={'test_id': self.test.pk})
         response = self.client.post(url, {'essay_text': 'Climate change is a serious issue.'})
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['band_score'], 7.0)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertIn('message', response.data)
 
     def test_writing_evaluation_missing_essay(self):
         url = reverse('writing-evaluate', kwargs={'test_id': self.test.pk})

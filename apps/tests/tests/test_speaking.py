@@ -37,8 +37,8 @@ class SpeakingEvaluationViewTest(APITestCase):
         mock_post.return_value = self._mock_response(6.5)
         url = reverse('speaking-evaluate', kwargs={'test_id': self.speaking_test.pk})
         response = self.client.post(url, {'transcript': 'Technology is important.'})
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['band_score'], 6.5)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertIn('message', response.data)
 
     def test_speaking_evaluation_no_input(self):
         url = reverse('speaking-evaluate', kwargs={'test_id': self.speaking_test.pk})

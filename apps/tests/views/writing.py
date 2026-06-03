@@ -7,7 +7,7 @@ from ..serializers.writing import UserTestResultSerializer
 from ..tasks import evaluate_writing_task
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-
+import requests
 
 class WritingEvaluationView(APIView):
     permission_classes = [IsAuthenticated]

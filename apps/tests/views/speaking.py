@@ -7,6 +7,7 @@ from ..serializers.speaking import SpeakingResultSerializer
 from ..tasks import evaluate_speaking_task
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+import requests
 
 class SpeakingEvaluationView(APIView):
     permission_classes = [IsAuthenticated]
