@@ -21,6 +21,7 @@ class Test(models.Model):
     duration_minutes = models.IntegerField(default=60)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    audio_url = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return self.title
