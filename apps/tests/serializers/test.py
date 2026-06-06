@@ -21,4 +21,4 @@ class TestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Test
-        fields = ('id', 'title', 'section', 'duration_minutes', 'is_active', 'created_at', 'questions')
+        fields = ('id', 'title', 'section', 'duration_minutes', 'is_active', 'created_at', 'questions', 'audio_url')
