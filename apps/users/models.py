@@ -8,6 +8,13 @@ class User(AbstractUser):
     is_premium = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    streak_count = models.IntegerField(default=0)
+    last_visit_date = models.DateField(null=True, blank=True)
+
+    xp_total = models.IntegerField(default=0)
+    daily_goal_done = models.IntegerField(default=0)
+    daily_goal_date = models.DateField(null=True, blank=True)
+
     def __str__(self):
         return self.username
 
