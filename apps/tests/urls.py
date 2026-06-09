@@ -13,6 +13,7 @@ from .views import (
     BandScoreHistoryView,
     OverallProgressView,
     WeakAreasView,
+    AIChatView,
 )
 
 urlpatterns = [
@@ -29,4 +30,5 @@ urlpatterns = [
     path('statistics/history/', BandScoreHistoryView.as_view(), name='band-score-history'),
     path('statistics/overall/', OverallProgressView.as_view(), name='overall-progress'),
     path('statistics/weak-areas/', WeakAreasView.as_view(), name='weak-areas'),
+    path('ai-chat/', AIChatView.as_view(), name='ai-chat'),
 ]
