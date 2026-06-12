@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "anthropic/claude-3-haiku"
+OPENROUTER_MODEL = "google/gemini-flash-1.5-8b:free"
 MAX_MESSAGES = 20
 REQUEST_TIMEOUT = 30
 

@@ -20,6 +20,7 @@ services:
     build: .
     container_name: ielts_web
     restart: always
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --timeout 120
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -46,7 +47,7 @@ services:
       - .env
     environment:
       - DB_HOST=db
-#      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
       - db
       - redis
