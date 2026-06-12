@@ -3,10 +3,17 @@ from django.db import models
 
 
 class Word(models.Model):
+    TOPIC_CHOICES = [
+        ('Kunlik', 'Kunlik'),
+        ('Akademik', 'Akademik'),
+        ('IELTS', 'IELTS'),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='words')
     word = models.CharField(max_length=100)
     translation = models.CharField(max_length=200)
     example = models.TextField(blank=True)
+    topic = models.CharField(max_length=50, choices=TOPIC_CHOICES, default='Kunlik')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -16,9 +23,9 @@ class Word(models.Model):
 class WordReview(models.Model):
     QUALITY_CHOICES = [
         (0, 'Umuman bilmadim'),
-        (1, 'Qiyin bo\'ldi'),
+        (1, "Qiyin bo'ldi"),
         (2, 'Esladim'),
-        (3, 'Oson bo\'ldi'),
+        (3, "Oson bo'ldi"),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='word_reviews')

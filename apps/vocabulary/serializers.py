@@ -5,7 +5,7 @@ from .models import Word, WordReview
 class WordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Word
-        fields = ('id', 'word', 'translation', 'example', 'created_at')
+        fields = ('id', 'word', 'translation', 'example', 'topic', 'created_at')
         read_only_fields = ('created_at',)
 
 
