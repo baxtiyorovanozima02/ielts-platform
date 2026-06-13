@@ -1,4 +1,3 @@
-
 from celery import shared_task
 from django.conf import settings
 import requests
@@ -8,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 XAI_URL = "https://api.x.ai/v1/chat/completions"
-XAI_MODEL = "grok-4-fast"
+XAI_MODEL = "grok-4-fast-reasoning"
 REQUEST_TIMEOUT = 60
 
 

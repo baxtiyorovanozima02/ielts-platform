@@ -1,4 +1,3 @@
-
 import json
 import re
 import requests
@@ -38,7 +37,7 @@ def call_gemini(prompt, timeout=110):
             "Content-Type": "application/json",
         },
         json={
-            "model": "grok-4-fast",
+            "model": "grok-4-fast-reasoning",
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 4000,
             "temperature": 0.7,

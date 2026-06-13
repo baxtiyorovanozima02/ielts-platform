@@ -1,4 +1,3 @@
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -12,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 XAI_URL = "https://api.x.ai/v1/chat/completions"
-XAI_MODEL = "grok-4-fast"
+XAI_MODEL = "grok-4-fast-reasoning"
 MAX_MESSAGES = 20
 REQUEST_TIMEOUT = 60
 
