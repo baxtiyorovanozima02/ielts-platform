@@ -176,6 +176,7 @@ SWAGGER_SETTINGS = {
 }
 
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+XAI_API_KEY = os.getenv('XAI_API_KEY')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -187,20 +188,10 @@ CELERY_TASK_SERIALIZER = 'json'
 
 INSTALLED_APPS += ['django_celery_results']
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'https://ielts-frontend-woad.vercel.app',
-]
-
-CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'authorization',
-    'content-type',
-    'x-csrftoken',
-]
-
+CORS_ALLOWED_ORIGINS = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:3000'
+).split(',')
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'

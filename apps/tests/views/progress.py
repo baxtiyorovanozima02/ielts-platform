@@ -1,4 +1,6 @@
+
 import json
+import re
 import requests
 from django.conf import settings
 from rest_framework import status, generics
@@ -10,79 +12,54 @@ from ..serializers.progress import UserProgressSerializer, DailyPlanSerializer
 from drf_yasg.utils import swagger_auto_schema
 
 
-# OpenRouter orqali ishlaydigan bepul modellar to'liq ro'yxati
-FREE_MODELS = [
-    "deepseek/deepseek-r1-0528:free",
-    "deepseek/deepseek-chat-v3-0324:free",
-    "google/gemma-3-27b-it:free",
-    "google/gemma-3-12b-it:free",
-    "google/gemma-3-4b-it:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "meta-llama/llama-3.1-8b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-    "microsoft/phi-4-reasoning-plus:free",
-    "qwen/qwen2.5-72b-instruct:free",
-    "qwen/qwen2.5-7b-instruct:free",
-]
-
-
-def call_openrouter(prompt, models=None, timeout=25):
+def extract_json(raw: str) -> dict:
     """
-    OpenRouter API ga so'rov yuboradi. Birinchi model ishlamasa
-    keyingisiga o'tadi. Muvaffaqiyatli javob bo'lsa qaytaradi.
+    AI javobidan JSON ni ishonchli ajratib oladi.
     """
-    if models is None:
-        models = FREE_MODELS
+    match = re.search(r'```(?:json)?\s*([\s\S]*?)```', raw)
+    if match:
+        return json.loads(match.group(1).strip())
 
-    all_errors = []
+    match = re.search(r'\{[\s\S]*\}', raw)
+    if match:
+        return json.loads(match.group(0).strip())
 
-    for model in models:
-        try:
-            response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://selfstudy.uz",
-                    "X-Title": "SelfStudy IELTS",
-                },
-                json={
-                    "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 800,
-                },
-                timeout=timeout,
-            )
+    raise ValueError("JSON topilmadi")
 
-            if response.status_code == 429:
-                all_errors.append(f"{model}: rate limit")
-                continue
 
-            if response.status_code != 200:
-                all_errors.append(f"{model}: status {response.status_code}")
-                continue
+def call_gemini(prompt, timeout=110):
+    """
+    xAI (Grok) API ga so'rov yuboradi. Tez va ishonchli.
+    """
+    response = requests.post(
+        "https://api.x.ai/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {settings.XAI_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "grok-4-fast",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 4000,
+            "temperature": 0.7,
+        },
+        timeout=timeout,
+    )
 
-            data = response.json()
+    if response.status_code != 200:
+        raise Exception(f"Grok xato: {response.status_code} — {response.text[:300]}")
 
-            if "choices" not in data or not data["choices"]:
-                all_errors.append(f"{model}: choices yo'q")
-                continue
+    data = response.json()
 
-            content = data["choices"][0]["message"]["content"]
-            if not content or not content.strip():
-                all_errors.append(f"{model}: bo'sh javob")
-                continue
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError):
+        raise Exception(f"Grok javob strukturasi noto'g'ri: {str(data)[:300]}")
 
-            return content, model
+    if not content or not content.strip():
+        raise Exception("Grok bo'sh javob qaytardi")
 
-        except requests.exceptions.Timeout:
-            all_errors.append(f"{model}: timeout {timeout}s")
-            continue
-        except Exception as e:
-            all_errors.append(f"{model}: {str(e)[:80]}")
-            continue
-
-    raise Exception(f"Barcha modellar ishlamadi. Xatolar: {' | '.join(all_errors[-3:])}")
+    return content
 
 
 class UserProgressView(generics.ListAPIView):
@@ -132,7 +109,7 @@ class DailyPlanView(APIView):
         """
 
         try:
-            plan_text, used_model = call_openrouter(prompt)
+            plan_text = call_gemini(prompt)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
@@ -188,17 +165,29 @@ FAQAT JSON formatida javob bering. Boshqa hech narsa yozmang:
 Faqat JSON, boshqa matn yoq."""
 
         try:
-            raw, used_model = call_openrouter(prompt, timeout=25)
+            raw = call_gemini(prompt, timeout=110)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
-        clean = raw.replace('```json', '').replace('```', '').strip()
-
         try:
-            result = json.loads(clean)
+            result = extract_json(raw)
         except Exception:
             return Response(
-                {'error': 'AI javobini o\'qib bo\'lmadi', 'raw': raw, 'model': used_model},
+                {'error': "AI javobini o'qib bo'lmadi", 'raw': raw[:500]},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+
+        required = ['title', 'summary', 'targetBand', 'motivation', 'tasks']
+        missing = [f for f in required if f not in result]
+        if missing:
+            return Response(
+                {'error': f"AI javobida maydonlar yetishmayapti: {missing}", 'raw': raw[:500]},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+
+        if not isinstance(result.get('tasks'), list) or len(result['tasks']) == 0:
+            return Response(
+                {'error': "AI tasks ro'yxatini qaytarmadi", 'raw': raw[:500]},
                 status=status.HTTP_502_BAD_GATEWAY
             )
 

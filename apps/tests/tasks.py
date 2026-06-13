@@ -1,3 +1,4 @@
+
 from celery import shared_task
 from django.conf import settings
 import requests
@@ -6,21 +7,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "anthropic/claude-3-haiku"
+XAI_URL = "https://api.x.ai/v1/chat/completions"
+XAI_MODEL = "grok-4-fast"
 REQUEST_TIMEOUT = 60
 
 
 def _call_openrouter(prompt: str) -> str:
     response = requests.post(
-        OPENROUTER_URL,
+        XAI_URL,
         headers={
-            "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+            "Authorization": f"Bearer {settings.XAI_API_KEY}",
             "Content-Type": "application/json",
-            "HTTP-Referer": getattr(settings, "SITE_URL", "https://selfstudy.uz"),
         },
         json={
-            "model": OPENROUTER_MODEL,
+            "model": XAI_MODEL,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 1000,
         },
