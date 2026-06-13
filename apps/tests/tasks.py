@@ -6,27 +6,41 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-XAI_URL = "https://api.x.ai/v1/chat/completions"
-XAI_MODEL = "grok-4-fast-reasoning"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "llama-3.1-8b-instant",
+]
 REQUEST_TIMEOUT = 60
 
 
 def _call_openrouter(prompt: str) -> str:
-    response = requests.post(
-        XAI_URL,
-        headers={
-            "Authorization": f"Bearer {settings.XAI_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": XAI_MODEL,
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 1000,
-        },
-        timeout=REQUEST_TIMEOUT,
-    )
-    response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
+    last_error = None
+    for model in GROQ_MODELS:
+        try:
+            response = requests.post(
+                GROQ_URL,
+                headers={
+                    "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1000,
+                },
+                timeout=REQUEST_TIMEOUT,
+            )
+            if response.status_code != 200:
+                last_error = f"{model}: {response.status_code} {response.text[:200]}"
+                continue
+            return response.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            last_error = f"{model}: {str(e)}"
+            continue
+    raise Exception(f"Barcha modellar ishlamadi. Oxirgi xato: {last_error}")
 
 
 def _extract_band_score(text: str) -> float | None:

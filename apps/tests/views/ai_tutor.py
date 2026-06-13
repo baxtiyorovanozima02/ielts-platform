@@ -10,8 +10,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-XAI_URL = "https://api.x.ai/v1/chat/completions"
-XAI_MODEL = "grok-4-fast-reasoning"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "llama-3.1-8b-instant",
+]
 MAX_MESSAGES = 20
 REQUEST_TIMEOUT = 60
 
@@ -84,41 +89,63 @@ class AIChatView(APIView):
             )
 
         headers = {
-            "Authorization": f"Bearer {settings.XAI_API_KEY}",
+            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
             "Content-Type": "application/json",
         }
         messages_payload = [{"role": "system", "content": SYSTEM_PROMPT}] + sanitized
 
-        try:
-            response = requests.post(
-                XAI_URL,
-                headers=headers,
-                json={
-                    "model": XAI_MODEL,
-                    "messages": messages_payload,
-                    "max_tokens": 800,
-                },
-                timeout=REQUEST_TIMEOUT,
-            )
-            response.raise_for_status()
-            reply = response.json()["choices"][0]["message"]["content"]
-            return Response({"reply": reply, "model_used": XAI_MODEL})
+        last_error = None
+        last_status = status.HTTP_502_BAD_GATEWAY
 
-        except requests.Timeout:
-            logger.warning("xAI timeout for user %s", request.user.id)
+        for model in GROQ_MODELS:
+            try:
+                response = requests.post(
+                    GROQ_URL,
+                    headers=headers,
+                    json={
+                        "model": model,
+                        "messages": messages_payload,
+                        "max_tokens": 800,
+                    },
+                    timeout=REQUEST_TIMEOUT,
+                )
+
+                if response.status_code in (400, 404, 429, 503):
+                    logger.warning(
+                        "Groq model %s unavailable (status %s) for user %s, trying next model",
+                        model, response.status_code, request.user.id,
+                    )
+                    last_error = f"model {model} -> {response.status_code} {response.text[:200]}"
+                    last_status = status.HTTP_502_BAD_GATEWAY
+                    continue
+
+                response.raise_for_status()
+                reply = response.json()["choices"][0]["message"]["content"]
+                return Response({"reply": reply, "model_used": model})
+
+            except requests.Timeout:
+                logger.warning("Groq timeout (model %s) for user %s", model, request.user.id)
+                last_error = f"model {model} -> timeout"
+                last_status = status.HTTP_504_GATEWAY_TIMEOUT
+                continue
+            except requests.RequestException as exc:
+                logger.warning("Groq request error (model %s) for user %s: %s", model, request.user.id, exc)
+                last_error = f"model {model} -> {exc}"
+                last_status = status.HTTP_502_BAD_GATEWAY
+                continue
+            except (KeyError, IndexError) as exc:
+                logger.warning("Groq unexpected response (model %s): %s", model, exc)
+                last_error = f"model {model} -> bad response: {exc}"
+                last_status = status.HTTP_502_BAD_GATEWAY
+                continue
+
+        logger.error("All Groq models failed for user %s. Last error: %s", request.user.id, last_error)
+        if last_status == status.HTTP_504_GATEWAY_TIMEOUT:
             return Response(
                 {"error": "AI javob berish vaqti tugadi. Qayta urinib ko'ring."},
                 status=status.HTTP_504_GATEWAY_TIMEOUT,
             )
-        except requests.RequestException as exc:
-            logger.error("xAI request error for user %s: %s", request.user.id, exc)
-            return Response(
-                {"error": "AI xizmatiga ulanishda xatolik yuz berdi."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
-        except (KeyError, IndexError) as exc:
-            logger.error("xAI unexpected response: %s", exc)
-            return Response(
-                {"error": "AI dan kutilmagan javob keldi."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+        return Response(
+            {"error": "AI xizmatiga ulanishda xatolik yuz berdi."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )

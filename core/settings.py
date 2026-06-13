@@ -177,6 +177,7 @@ SWAGGER_SETTINGS = {
 
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 XAI_API_KEY = os.getenv('XAI_API_KEY')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

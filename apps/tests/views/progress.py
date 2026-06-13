@@ -26,39 +26,61 @@ def extract_json(raw: str) -> dict:
     raise ValueError("JSON topilmadi")
 
 
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "llama-3.1-8b-instant",
+]
+
+
 def call_gemini(prompt, timeout=110):
     """
-    xAI (Grok) API ga so'rov yuboradi. Tez va ishonchli.
+    Groq API ga so'rov yuboradi. Bir nechta model bilan, biri ishlamasa
+    keyingisi sinab ko'riladi.
     """
-    response = requests.post(
-        "https://api.x.ai/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {settings.XAI_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": "grok-4-fast-reasoning",
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 4000,
-            "temperature": 0.7,
-        },
-        timeout=timeout,
-    )
+    last_error = None
 
-    if response.status_code != 200:
-        raise Exception(f"Grok xato: {response.status_code} — {response.text[:300]}")
+    for model in GROQ_MODELS:
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 4000,
+                    "temperature": 0.7,
+                },
+                timeout=timeout,
+            )
 
-    data = response.json()
+            if response.status_code != 200:
+                last_error = f"{model}: status {response.status_code} - {response.text[:200]}"
+                continue
 
-    try:
-        content = data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError):
-        raise Exception(f"Grok javob strukturasi noto'g'ri: {str(data)[:300]}")
+            data = response.json()
 
-    if not content or not content.strip():
-        raise Exception("Grok bo'sh javob qaytardi")
+            try:
+                content = data["choices"][0]["message"]["content"]
+            except (KeyError, IndexError):
+                last_error = f"{model}: javob strukturasi noto'g'ri - {str(data)[:200]}"
+                continue
 
-    return content
+            if not content or not content.strip():
+                last_error = f"{model}: bo'sh javob qaytdi"
+                continue
+
+            return content
+
+        except Exception as e:
+            last_error = f"{model}: {str(e)}"
+            continue
+
+    raise Exception(f"Barcha modellar ishlamadi. Oxirgi xato: {last_error}")
 
 
 class UserProgressView(generics.ListAPIView):
