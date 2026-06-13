@@ -10,26 +10,31 @@ from ..serializers.progress import UserProgressSerializer, DailyPlanSerializer
 from drf_yasg.utils import swagger_auto_schema
 
 
-# Tezkor free modellar - kichik va tez javob beradi
+# OpenRouter orqali ishlaydigan bepul modellar to'liq ro'yxati
 FREE_MODELS = [
-    "google/gemma-3n-e4b-it:free",
-    "meta-llama/llama-3.2-3b-instruct:free",
-    "microsoft/phi-3-mini-128k-instruct:free",
-    "qwen/qwen3-coder:free",
+    "deepseek/deepseek-r1-0528:free",
+    "deepseek/deepseek-chat-v3-0324:free",
+    "google/gemma-3-27b-it:free",
+    "google/gemma-3-12b-it:free",
+    "google/gemma-3-4b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "meta-llama/llama-3.1-8b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "microsoft/phi-4-reasoning-plus:free",
+    "qwen/qwen2.5-72b-instruct:free",
+    "qwen/qwen2.5-7b-instruct:free",
 ]
 
 
 def call_openrouter(prompt, models=None, timeout=25):
     """
     OpenRouter API ga so'rov yuboradi. Birinchi model ishlamasa
-    (429, 5xx, yoki boshqa xato), navbatdagi modelga o'tadi.
-    Muvaffaqiyatli javob bo'lsa content matnini qaytaradi.
-    Hech qaysi model ishlamasa - exception ko'taradi.
+    keyingisiga o'tadi. Muvaffaqiyatli javob bo'lsa qaytaradi.
     """
     if models is None:
         models = FREE_MODELS
 
-    last_error = None
+    all_errors = []
 
     for model in models:
         try:
@@ -38,6 +43,8 @@ def call_openrouter(prompt, models=None, timeout=25):
                 headers={
                     "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
                     "Content-Type": "application/json",
+                    "HTTP-Referer": "https://selfstudy.uz",
+                    "X-Title": "SelfStudy IELTS",
                 },
                 json={
                     "model": model,
@@ -47,28 +54,35 @@ def call_openrouter(prompt, models=None, timeout=25):
                 timeout=timeout,
             )
 
+            if response.status_code == 429:
+                all_errors.append(f"{model}: rate limit")
+                continue
+
             if response.status_code != 200:
-                last_error = f"{model}: status {response.status_code} - {response.text[:200]}"
+                all_errors.append(f"{model}: status {response.status_code}")
                 continue
 
             data = response.json()
 
             if "choices" not in data or not data["choices"]:
-                last_error = f"{model}: 'choices' javobda yo'q - {str(data)[:200]}"
+                all_errors.append(f"{model}: choices yo'q")
                 continue
 
             content = data["choices"][0]["message"]["content"]
             if not content or not content.strip():
-                last_error = f"{model}: bo'sh javob qaytdi"
+                all_errors.append(f"{model}: bo'sh javob")
                 continue
 
             return content, model
 
+        except requests.exceptions.Timeout:
+            all_errors.append(f"{model}: timeout {timeout}s")
+            continue
         except Exception as e:
-            last_error = f"{model}: {str(e)}"
+            all_errors.append(f"{model}: {str(e)[:80]}")
             continue
 
-    raise Exception(f"Barcha modellar ishlamadi. Oxirgi xato: {last_error}")
+    raise Exception(f"Barcha modellar ishlamadi. Xatolar: {' | '.join(all_errors[-3:])}")
 
 
 class UserProgressView(generics.ListAPIView):
