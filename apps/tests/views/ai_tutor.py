@@ -11,7 +11,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "google/gemini-flash-1.5-8b:free"
+OPENROUTER_MODELS = [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "deepseek/deepseek-chat-v3.1:free",
+    "deepseek/deepseek-r1:free",
+    "qwen/qwen3-coder:free",
+    "qwen/qwen-2.5-72b-instruct:free",
+    "google/gemma-3-27b-it:free",
+    "mistralai/mistral-small-3.2-24b-instruct:free",
+    "meta-llama/llama-4-maverick:free",
+    "meta-llama/llama-4-scout:free",
+    "openrouter/auto",
+]
 MAX_MESSAGES = 20
 REQUEST_TIMEOUT = 30
 
@@ -83,42 +94,65 @@ class AIChatView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        payload = {
-            "model": OPENROUTER_MODEL,
-            "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + sanitized,
-            "max_tokens": 800,
+        headers = {
+            "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": getattr(settings, "SITE_URL", "https://selfstudy.uz"),
         }
+        messages_payload = [{"role": "system", "content": SYSTEM_PROMPT}] + sanitized
 
-        try:
-            response = requests.post(
-                OPENROUTER_URL,
-                headers={
-                    "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": getattr(settings, "SITE_URL", "https://selfstudy.uz"),
-                },
-                json=payload,
-                timeout=REQUEST_TIMEOUT,
-            )
-            response.raise_for_status()
-            reply = response.json()["choices"][0]["message"]["content"]
-            return Response({"reply": reply})
+        last_error = None
+        last_status = status.HTTP_502_BAD_GATEWAY
 
-        except requests.Timeout:
-            logger.warning("OpenRouter timeout for user %s", request.user.id)
+        for model in OPENROUTER_MODELS:
+            try:
+                response = requests.post(
+                    OPENROUTER_URL,
+                    headers=headers,
+                    json={
+                        "model": model,
+                        "messages": messages_payload,
+                        "max_tokens": 800,
+                    },
+                    timeout=REQUEST_TIMEOUT,
+                )
+
+                if response.status_code in (404, 429, 503):
+                    logger.warning(
+                        "OpenRouter model %s unavailable (status %s) for user %s, trying next model",
+                        model, response.status_code, request.user.id,
+                    )
+                    last_error = f"model {model} -> {response.status_code}"
+                    last_status = status.HTTP_502_BAD_GATEWAY
+                    continue
+
+                response.raise_for_status()
+                reply = response.json()["choices"][0]["message"]["content"]
+                return Response({"reply": reply, "model_used": model})
+
+            except requests.Timeout:
+                logger.warning("OpenRouter timeout (model %s) for user %s", model, request.user.id)
+                last_error = f"model {model} -> timeout"
+                last_status = status.HTTP_504_GATEWAY_TIMEOUT
+                continue
+            except requests.RequestException as exc:
+                logger.warning("OpenRouter request error (model %s) for user %s: %s", model, request.user.id, exc)
+                last_error = f"model {model} -> {exc}"
+                last_status = status.HTTP_502_BAD_GATEWAY
+                continue
+            except (KeyError, IndexError) as exc:
+                logger.warning("OpenRouter unexpected response (model %s): %s", model, exc)
+                last_error = f"model {model} -> bad response: {exc}"
+                last_status = status.HTTP_502_BAD_GATEWAY
+                continue
+
+        logger.error("All OpenRouter models failed for user %s. Last error: %s", request.user.id, last_error)
+        if last_status == status.HTTP_504_GATEWAY_TIMEOUT:
             return Response(
                 {"error": "AI javob berish vaqti tugadi. Qayta urinib ko'ring."},
                 status=status.HTTP_504_GATEWAY_TIMEOUT,
             )
-        except requests.RequestException as exc:
-            logger.error("OpenRouter request error for user %s: %s", request.user.id, exc)
-            return Response(
-                {"error": "AI xizmatiga ulanishda xatolik yuz berdi."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
-        except (KeyError, IndexError) as exc:
-            logger.error("OpenRouter unexpected response: %s", exc)
-            return Response(
-                {"error": "AI dan kutilmagan javob keldi."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+        return Response(
+            {"error": "AI xizmatiga ulanishda xatolik yuz berdi."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
