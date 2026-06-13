@@ -19,7 +19,7 @@ FREE_MODELS = [
 ]
 
 
-def call_openrouter(prompt, models=None, timeout=60):
+def call_openrouter(prompt, models=None, timeout=120):
     """
     OpenRouter API ga so'rov yuboradi. Birinchi model ishlamasa
     (429, 5xx, yoki boshqa xato), navbatdagi modelga o'tadi.
@@ -173,7 +173,7 @@ FAQAT JSON formatida javob bering. Boshqa hech narsa yozmang:
 Faqat JSON, boshqa matn yoq."""
 
         try:
-            raw, used_model = call_openrouter(prompt, timeout=60)
+            raw, used_model = call_openrouter(prompt, timeout=120)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
