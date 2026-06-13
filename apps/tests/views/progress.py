@@ -10,16 +10,16 @@ from ..serializers.progress import UserProgressSerializer, DailyPlanSerializer
 from drf_yasg.utils import swagger_auto_schema
 
 
-# Ishlaydigan tekin (free) modellar ro'yxati - birinchisi ishlamasa keyingisi sinab ko'riladi
+# Tezkor free modellar - kichik va tez javob beradi
 FREE_MODELS = [
+    "google/gemma-3n-e4b-it:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "microsoft/phi-3-mini-128k-instruct:free",
     "qwen/qwen3-coder:free",
-    "openai/gpt-oss-20b:free",
-    "nvidia/nemotron-nano-9b-v2:free",
-    "google/gemma-3-27b-it:free",
 ]
 
 
-def call_openrouter(prompt, models=None, timeout=120):
+def call_openrouter(prompt, models=None, timeout=25):
     """
     OpenRouter API ga so'rov yuboradi. Birinchi model ishlamasa
     (429, 5xx, yoki boshqa xato), navbatdagi modelga o'tadi.
@@ -42,6 +42,7 @@ def call_openrouter(prompt, models=None, timeout=120):
                 json={
                     "model": model,
                     "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 800,
                 },
                 timeout=timeout,
             )
@@ -173,7 +174,7 @@ FAQAT JSON formatida javob bering. Boshqa hech narsa yozmang:
 Faqat JSON, boshqa matn yoq."""
 
         try:
-            raw, used_model = call_openrouter(prompt, timeout=120)
+            raw, used_model = call_openrouter(prompt, timeout=25)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
