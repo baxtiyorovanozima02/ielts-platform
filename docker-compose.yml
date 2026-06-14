@@ -51,6 +51,21 @@ services:
     depends_on:
       - db
       - redis
+  celery-beat:
+    build: .
+    container_name: ielts_celery_beat
+    restart: always
+    command: celery -A core beat --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
 
   nginx:
     image: nginx:alpine

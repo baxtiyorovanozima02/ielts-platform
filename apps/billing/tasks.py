@@ -158,6 +158,3 @@ def check_expired_subscriptions():
 
         subscription.user.is_premium = False
         subscription.user.save()
-
-        # Foydalanuvchiga xabar
-        notify_payment_received.delay(subscription.user.id)
