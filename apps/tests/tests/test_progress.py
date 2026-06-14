@@ -89,6 +89,7 @@ class DailyPlanViewTest(APITestCase):
     @patch('apps.tests.views.progress.requests.post')
     def test_daily_plan_generated(self, mock_post):
         mock_resp = MagicMock()
+        mock_resp.status_code = 200
         mock_resp.json.return_value = {
             'choices': [{'message': {'content': 'Study writing for 1 hour. Practice speaking for 30 minutes.'}}]
         }
