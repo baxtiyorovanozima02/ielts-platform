@@ -7,6 +7,7 @@ from ..serializers.writing import UserTestResultSerializer
 from ..tasks import evaluate_writing_task
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from ..models import UserProgress, Section
 import requests
 
 class WritingEvaluationView(APIView):
@@ -42,6 +43,15 @@ class WritingEvaluationView(APIView):
         )
 
         evaluate_writing_task.delay(result.id)
+
+
+        section = test.section
+        progress, created = UserProgress.objects.get_or_create(
+            user=request.user,
+            section=section,
+        )
+        progress.total_tests_taken += 1
+        progress.save(update_fields=['total_tests_taken'])
 
         return Response({
             'id': result.id,

@@ -2,11 +2,11 @@ from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from ..models import Test, SpeakingResult
 from ..serializers.speaking import SpeakingResultSerializer
 from ..tasks import evaluate_speaking_task
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from ..models import Test, SpeakingResult, UserProgress
 import requests
 
 class SpeakingEvaluationView(APIView):
@@ -49,6 +49,14 @@ class SpeakingEvaluationView(APIView):
         )
 
         evaluate_speaking_task.delay(result.id)
+
+        section = test.section
+        progress, created = UserProgress.objects.get_or_create(
+            user=request.user,
+            section=section,
+        )
+        progress.total_tests_taken += 1
+        progress.save(update_fields=['total_tests_taken'])
 
         return Response({
             'id': result.id,
