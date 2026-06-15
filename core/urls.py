@@ -45,6 +45,7 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
     path('api/v1/vocabulary/', include('apps.vocabulary.urls')),
     path('api/v1/billing/', include('apps.billing.urls')),
+    path('api-auth/', include('rest_framework.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

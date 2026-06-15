@@ -112,5 +112,6 @@ virtualenv
 virtualenv-clone
 wcwidth
 websockets
+whitenoise
 yarl
 zipp
