@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Section, Test, Question, Answer, UserTestResult, SpeakingResult, UserProgress, DailyPlan
+from .models import (
+    Section, Test, Question, Answer, UserTestResult, SpeakingResult,
+    UserProgress, DailyPlan, ExaminerVoice, SpeakingSession, SpeakingSessionAnswer,
+)
 
 
 class AnswerInline(admin.TabularInline):
@@ -12,8 +15,8 @@ class AnswerInline(admin.TabularInline):
 class QuestionInline(admin.StackedInline):
     model = Question
     extra = 1
-    fields = ('order', 'question_type', 'text')
-    ordering = ('order',)
+    fields = ('order', 'part', 'question_type', 'text', 'prep_seconds', 'answer_seconds', 'cue_card_points')
+    ordering = ('part', 'order',)
     show_change_link = True
 
 
@@ -41,10 +44,10 @@ class TestAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('short_text', 'test', 'question_type', 'order', 'answer_count')
-    list_filter = ('question_type', 'test__section')
+    list_display = ('short_text', 'test', 'question_type', 'part', 'order', 'prep_seconds', 'answer_seconds', 'answer_count')
+    list_filter = ('question_type', 'part', 'test__section')
     search_fields = ('text', 'test__title')
-    ordering = ('test', 'order')
+    ordering = ('test', 'part', 'order')
     inlines = [AnswerInline]
 
     def short_text(self, obj):
@@ -73,9 +76,10 @@ class UserTestResultAdmin(admin.ModelAdmin):
 
 @admin.register(SpeakingResult)
 class SpeakingResultAdmin(admin.ModelAdmin):
-    list_display = ('user', 'test', 'band_score', 'created_at')
+    list_display = ('user', 'test', 'session', 'band_score', 'created_at')
+    list_filter = ('test__section',)
     search_fields = ('user__username',)
-    readonly_fields = ('user', 'test', 'transcript', 'ai_feedback', 'band_score', 'created_at')
+    readonly_fields = ('user', 'test', 'session', 'transcript', 'ai_feedback', 'band_score', 'created_at')
 
 
 @admin.register(UserProgress)
@@ -92,3 +96,34 @@ class DailyPlanAdmin(admin.ModelAdmin):
     list_filter = ('ai_generated',)
     search_fields = ('user__username',)
     readonly_fields = ('user', 'date', 'plan_text', 'created_at')
+
+
+@admin.register(ExaminerVoice)
+class ExaminerVoiceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'gender', 'accent', 'tts_voice_id', 'is_active')
+    list_filter = ('gender', 'accent', 'is_active')
+    list_editable = ('is_active',)
+    search_fields = ('name', 'tts_voice_id')
+
+
+class SpeakingSessionAnswerInline(admin.TabularInline):
+    model = SpeakingSessionAnswer
+    extra = 0
+    readonly_fields = ('question', 'audio_file', 'transcript', 'duration_seconds', 'answered_at')
+    can_delete = False
+
+
+@admin.register(SpeakingSession)
+class SpeakingSessionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'test', 'voice', 'current_part', 'status', 'started_at', 'finished_at')
+    list_filter = ('status', 'current_part', 'voice')
+    search_fields = ('user__username', 'test__title')
+    readonly_fields = ('user', 'test', 'started_at')
+    inlines = [SpeakingSessionAnswerInline]
+
+
+@admin.register(SpeakingSessionAnswer)
+class SpeakingSessionAnswerAdmin(admin.ModelAdmin):
+    list_display = ('session', 'question', 'duration_seconds', 'answered_at')
+    search_fields = ('session__user__username',)
+    readonly_fields = ('session', 'question', 'audio_file', 'transcript', 'duration_seconds', 'answered_at')
