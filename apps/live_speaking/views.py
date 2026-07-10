@@ -57,7 +57,6 @@ class LiveSpeakingSessionStartView(APIView):
         try:
             avatar_token = create_avatar_session_token()
         except AvatarServiceError as exc:
-
             avatar_token = None
 
         return Response({
