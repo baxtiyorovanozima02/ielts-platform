@@ -139,6 +139,74 @@ Transcript:
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=30)
+def evaluate_speaking_session_task(self, session_id: int):
+    """To'liq mock speaking sessiya (Part 1 -> 2 -> 3) tugagach, barcha javoblarni
+    yig'ib, yagona SpeakingResult yaratadi va AI orqali umumiy band score beradi."""
+    from .models import SpeakingSession, SpeakingSessionAnswer, SpeakingResult
+
+    try:
+        session = SpeakingSession.objects.select_related('user', 'test').get(id=session_id)
+    except SpeakingSession.DoesNotExist:
+        logger.error("SpeakingSession %s not found", session_id)
+        return
+
+    answers = (
+        SpeakingSessionAnswer.objects
+        .filter(session=session)
+        .select_related('question')
+        .order_by('question__part', 'question__order')
+    )
+
+    if not answers.exists():
+        logger.warning("SpeakingSession %s has no answers, skipping evaluation", session_id)
+        return
+
+    transcript_parts = []
+    part_labels = {1: "PART 1", 2: "PART 2", 3: "PART 3"}
+    for answer in answers:
+        part_label = part_labels.get(answer.question.part, f"PART {answer.question.part}")
+        transcript_parts.append(
+            f"[{part_label}] Q: {answer.question.text}\nA: {answer.transcript or '(audio, transkript yoq)'}"
+        )
+    full_transcript = "\n\n".join(transcript_parts)
+
+    prompt = f"""You are an IELTS examiner. Evaluate the following FULL speaking mock exam
+(Part 1, Part 2, Part 3 combined) strictly according to official IELTS Speaking band descriptors.
+
+Provide your response in this exact format:
+Band Score: X.X
+Fluency and Coherence: [feedback]
+Lexical Resource: [feedback]
+Grammatical Range and Accuracy: [feedback]
+Pronunciation: [feedback]
+Overall Feedback: [2-3 sentence summary and advice]
+
+Full transcript:
+{full_transcript}"""
+
+    try:
+        ai_feedback = _call_openrouter(prompt)
+        band_score = _extract_band_score(ai_feedback)
+
+        result = SpeakingResult.objects.create(
+            user=session.user,
+            test=session.test,
+            session=session,
+            transcript=full_transcript,
+            ai_feedback=ai_feedback,
+            band_score=band_score,
+        )
+
+        logger.info("Speaking session %s evaluated: band %.1f (result %s)", session_id, band_score or 0, result.id)
+
+    except requests.RequestException as exc:
+        logger.warning("OpenRouter request failed for speaking session %s: %s", session_id, exc)
+        raise self.retry(exc=exc)
+    except Exception as exc:
+        logger.exception("Unexpected error evaluating speaking session %s: %s", session_id, exc)
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=30)
 def generate_daily_plan_task(self, user_id: int):
     from django.contrib.auth import get_user_model
     from .models import UserProgress, DailyPlan
