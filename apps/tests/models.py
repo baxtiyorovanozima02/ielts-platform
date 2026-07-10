@@ -114,6 +114,11 @@ class ExaminerVoice(models.Model):
         max_length=100,
         help_text="TTS provayderdagi ovoz identifikatori (masalan, ElevenLabs voice_id)."
     )
+    avatar_id = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Avatar provayderdagi (masalan, HeyGen) avatar identifikatori. Bo'sh bo'lsa standart avatar ishlatiladi."
+    )
     preview_audio_url = models.URLField(
         blank=True, null=True,
         help_text="Foydalanuvchi tanlashdan oldin eshitib ko'radigan namuna audio."
