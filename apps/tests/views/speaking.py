@@ -1,3 +1,4 @@
+import requests
 from django.utils import timezone
 from rest_framework import status, generics
 from rest_framework.views import APIView
