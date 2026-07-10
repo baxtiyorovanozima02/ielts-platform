@@ -8,15 +8,16 @@ from drf_yasg import openapi
 
 from .models import LiveSpeakingSession
 from .serializers import LiveSpeakingSessionSerializer, LiveSpeakingSessionDetailSerializer
+from .avatar_service import create_avatar_session_token, get_avatar_id_for_voice, AvatarServiceError
 from apps.tests.models import Test, ExaminerVoice
 
 
 class LiveSpeakingSessionStartView(APIView):
     """AI avatar bilan jonli suhbat sessiyasini boshlaydi.
 
-    Bu view faqat sessiya yozuvini yaratadi (DB'da). Haqiqiy audio oqimi
-    keyingi qadamda qo'shiladigan WebSocket consumer orqali boradi:
-    ws/live-speaking/<session_id>/
+    Bu view sessiya yozuvini yaratadi VA HeyGen avatar tokenini ham qaytaradi,
+    shunda frontend bir so'rov bilan: (1) WebSocket manzilini, (2) avatar
+    ko'rsatish uchun kerakli tokenni oladi.
     """
     permission_classes = [IsAuthenticated]
 
@@ -53,10 +54,40 @@ class LiveSpeakingSessionStartView(APIView):
             status='connecting',
         )
 
+        try:
+            avatar_token = create_avatar_session_token()
+        except AvatarServiceError as exc:
+
+            avatar_token = None
+
         return Response({
             'session': LiveSpeakingSessionSerializer(session).data,
             'websocket_url': f"/ws/live-speaking/{session.id}/",
+            'avatar_token': avatar_token,
+            'avatar_id': get_avatar_id_for_voice(voice),
         }, status=status.HTTP_201_CREATED)
+
+
+class LiveSpeakingAvatarTokenView(APIView):
+    """Mavjud sessiya uchun avatar tokenini qaytadan olish kerak bo'lganda
+    (masalan, token muddati tugagan yoki sahifa qayta yuklangan bo'lsa)."""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(operation_summary="Avatar tokenini qayta olish")
+    def get(self, request, session_id):
+        session = LiveSpeakingSession.objects.filter(id=session_id, user=request.user).first()
+        if not session:
+            return Response({'error': 'Sessiya topilmadi'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            avatar_token = create_avatar_session_token()
+        except AvatarServiceError:
+            return Response({'error': 'Avatar xizmatiga ulanib bo\'lmadi'}, status=status.HTTP_502_BAD_GATEWAY)
+
+        return Response({
+            'avatar_token': avatar_token,
+            'avatar_id': get_avatar_id_for_voice(session.voice),
+        })
 
 
 class LiveSpeakingSessionDetailView(APIView):
