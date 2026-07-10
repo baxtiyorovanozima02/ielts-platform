@@ -142,7 +142,6 @@ class LiveSpeakingConsumer(AsyncWebsocketConsumer):
 
         await self.send_json({"type": "status", "state": "listening"})
 
-
     async def _speech_to_text(self, audio_bytes: bytes) -> str:
         def _call():
             files = {'file': ('audio.webm', audio_bytes, 'audio/webm')}
@@ -195,7 +194,6 @@ class LiveSpeakingConsumer(AsyncWebsocketConsumer):
 
         return await sync_to_async(_call, thread_sensitive=False)()
 
-
     @sync_to_async
     def _get_session(self, session_id, user):
         return LiveSpeakingSession.objects.filter(id=session_id, user=user).first()
@@ -224,7 +222,6 @@ class LiveSpeakingConsumer(AsyncWebsocketConsumer):
         if self.session.voice_id:
             return self.session.voice.tts_voice_id
         return settings.ELEVENLABS_DEFAULT_VOICE_ID
-
 
     async def send_json(self, data: dict):
         await self.send(text_data=json.dumps(data))
